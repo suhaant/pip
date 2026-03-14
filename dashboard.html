@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Hack Island — Pump Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#0A6EBD;--blue-dk:#074F8A;--blue-lt:#E8F2FA;--gold:#9A6F00;--bg:#ECEEF2;--surface:#FFFFFF;--surface2:#F4F5F7;--border:#D8DCE4;--border2:#B8BEC9;--text:#0F1923;--text-mid:#374151;--text-dim:#6B7280;--red:#C81E1E;--red-bg:#FEF2F2;--red-bdr:#FECACA;--orange:#B45309;--orange-bg:#FFFBEB;--orange-bdr:#FCD34D;--green:#047857;--green-bg:#ECFDF5;--green-bdr:#6EE7B7;--blue-bg:#EFF6FF;--blue-bdr:#93C5FD;--gray-bg:#F3F4F6;--gray-bdr:#9CA3AF;}
+*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;}
+.header{height:56px;background:var(--blue-dk);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-diamond{width:26px;height:26px;background:var(--gold);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);flex-shrink:0;}
+.logo-name{font-size:16px;font-weight:700;color:#fff;}
+.logo-divider{width:1px;height:20px;background:rgba(255,255,255,0.2);}
+.header-title{font-size:14px;font-weight:500;color:rgba(255,255,255,0.8);}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.live-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;font-size:12px;font-weight:600;color:#fff;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#34D399;animation:pulse 2s ease infinite;flex-shrink:0;}
+.live-dot.alert{background:#FCA5A5;animation-duration:1s;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.clock{font-family:'DM Mono',monospace;font-size:13px;color:rgba(255,255,255,0.75);}
+.scenario-bar{padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px;}
+.scenario-label{font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.8px;margin-right:4px;white-space:nowrap;}
+.scen-btn{flex:1;padding:10px 14px;border:2px solid var(--border);background:var(--surface2);border-radius:10px;cursor:pointer;transition:all 0.15s;text-align:left;display:flex;align-items:center;gap:10px;}
+.scen-btn:hover:not(:disabled){border-color:var(--blue);background:var(--blue-lt);}
+.scen-btn.active{border-color:var(--blue);background:var(--blue-bg);box-shadow:0 2px 8px rgba(10,110,189,0.15);}
+.scen-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.scen-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.scen-icon.red{background:var(--red-bg);}.scen-icon.orange{background:var(--orange-bg);}.scen-icon.green{background:var(--green-bg);}
+.scen-name{font-size:13px;font-weight:700;color:var(--text);display:block;}
+.scen-btn.active .scen-name{color:var(--blue);}
+.scen-sub{font-size:11px;color:var(--text-mid);margin-top:1px;display:block;}
+.clear-btn{padding:8px 12px;border:1px solid var(--border2);background:transparent;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-mid);cursor:pointer;white-space:nowrap;transition:all 0.12s;}
+.clear-btn:hover{background:var(--bg);border-color:var(--blue);color:var(--blue);}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.2px;border:1px solid;}
+.badge-red{color:var(--red);background:var(--red-bg);border-color:var(--red-bdr);}
+.badge-orange{color:var(--orange);background:var(--orange-bg);border-color:var(--orange-bdr);}
+.badge-green{color:var(--green);background:var(--green-bg);border-color:var(--green-bdr);}
+.badge-blue{color:var(--blue);background:var(--blue-bg);border-color:var(--blue-bdr);}
+.badge-gray{color:var(--text-mid);background:var(--gray-bg);border-color:var(--gray-bdr);}
+.layout{display:grid;grid-template-columns:220px 1fr 440px;height:calc(100vh - 56px - 70px);}
+.col{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--surface);}
+.col:last-child{border-right:none;}
+.sec-head{padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;}
+.sec-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-mid);}
+.fleet-scroll{flex:1;overflow-y:auto;}
+.fleet-card{padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;border-left:3px solid transparent;}
+.fleet-card:hover{background:var(--surface2);}
+.fleet-card.active{background:var(--blue-lt);border-left-color:var(--blue);}
+.fleet-card.st-CRITICAL{border-left-color:var(--red);}.fleet-card.st-HIGH{border-left-color:var(--orange);}.fleet-card.st-WARNING{border-left-color:#FBBF24;}.fleet-card.st-OFFLINE{opacity:0.5;}
+.fc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+.fc-id{font-size:14px;font-weight:700;color:var(--text);}
+.fc-loc{font-size:11px;color:var(--text-mid);margin-bottom:5px;}
+.fc-metrics{display:flex;gap:8px;}
+.fc-m{font-size:12px;font-weight:600;font-family:'DM Mono',monospace;}
+.fc-m.hot{color:var(--red);}.fc-m.warm{color:var(--orange);}.fc-m.ok{color:var(--green);}.fc-m.dim{color:var(--text-mid);font-weight:400;}
+.gauge-strip{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);flex-shrink:0;}
+.gauge{padding:12px 14px;border-right:1px solid var(--border);position:relative;}
+.gauge:last-child{border-right:none;}
+.gauge::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.gauge.ok::after{background:var(--green);}.gauge.warn::after{background:var(--orange);}.gauge.crit::after{background:var(--red);}
+.g-label{font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-mid);margin-bottom:3px;}
+.g-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;}
+.gauge.warn .g-val{color:var(--orange);}.gauge.crit .g-val{color:var(--red);}
+.g-unit{font-size:11px;color:var(--text-mid);margin-left:1px;}
+.g-delta{font-size:11px;color:var(--text-mid);margin-top:2px;font-family:'DM Mono',monospace;}
+.g-delta.up{color:var(--red);}.g-delta.down{color:var(--orange);}
+.chart-area{flex:1;padding:14px;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+.chart-title{font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:8px;}
+.chart-svg-wrap{flex:1;min-height:0;}
+svg.chart{width:100%;height:100%;}
+.chart-legend{display:flex;gap:14px;padding:8px 14px;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface2);}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-mid);}
+.leg-line{width:14px;height:2px;border-radius:1px;}
+.cmp-strip{display:none;border-top:1px solid var(--border);padding:12px 14px;flex-shrink:0;background:var(--surface2);}
+.cmp-strip.visible{display:block;}
+.cmp-title{font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-mid);margin-bottom:8px;}
+.cmp-row-header{display:grid;grid-template-columns:90px 1fr 1fr;gap:6px;margin-bottom:5px;}
+.cmp-col-label{font-size:11px;font-weight:700;text-align:center;padding:3px 6px;border-radius:5px;}
+.cmp-col-label.suspect{background:var(--red-bg);color:var(--red);}.cmp-col-label.baseline{background:var(--green-bg);color:var(--green);}
+.cmp-data-row{display:grid;grid-template-columns:90px 1fr 1fr;gap:6px;margin-bottom:3px;align-items:center;}
+.cmp-metric{font-size:11px;color:var(--text-mid);font-weight:500;}
+.cmp-val{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;text-align:center;}
+.cmp-val.bad{color:var(--red);}.cmp-val.good{color:var(--green);}
+.delta-banner{margin-top:8px;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;line-height:1.5;border:1px solid;}
+.delta-banner.alert{background:var(--red-bg);border-color:var(--red-bdr);color:var(--red);}
+.delta-banner.ok{background:var(--green-bg);border-color:var(--green-bdr);color:var(--green);}
+.hist-scroll{flex:1;overflow-y:auto;}
+.hist-item{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;gap:9px;}
+.hist-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);margin-top:5px;flex-shrink:0;}
+.hist-date{font-size:11px;color:var(--text-mid);font-family:'DM Mono',monospace;margin-bottom:2px;}
+.hist-type{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.hist-note{font-size:12px;color:var(--text-mid);line-height:1.5;}
+.agent-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.agent-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:32px;text-align:center;}
+.empty-icon{font-size:40px;opacity:0.25;margin-bottom:8px;}
+.empty-title{font-size:16px;font-weight:700;color:var(--text-mid);}
+.empty-sub{font-size:13px;color:var(--text-mid);line-height:1.7;}
+/* Timeline — left-border cards, minimal noise */
+.tl-item{padding:11px 14px 11px 16px;border-bottom:1px solid var(--border);border-left:3px solid var(--border2);animation:tlfade 0.2s ease;}
+@keyframes tlfade{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:translateY(0);}}
+.tl-item.scan  {border-left-color:#93C5FD;}
+.tl-item.think {border-left-color:var(--blue);background:#FAFCFF;}
+.tl-item.compare{border-left-color:#6366F1;}
+.tl-item.tool  {border-left-color:#D4A820;}
+.tl-item.data  {border-left-color:var(--border2);}
+.tl-item.alert {border-left-color:var(--red);background:#FFFAFA;}
+.tl-item.done  {border-left-color:var(--green);background:#F0FDF8;}
+.tl-item.report{border-left-color:#D4A820;background:#FFFDF0;}
+.tl-type-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.tl-type-icon{font-size:12px;flex-shrink:0;}
+.tl-type-label{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;}
+.tl-type-label.scan,.tl-type-label.think{color:var(--blue);}
+.tl-type-label.compare{color:#4F46E5;}
+.tl-type-label.tool{color:#7B5E00;}
+.tl-type-label.data{color:var(--text-dim);}
+.tl-type-label.alert{color:var(--red);}
+.tl-type-label.done{color:var(--green);}
+.tl-type-label.report{color:#7B5E00;}
+.tl-body{font-size:13px;color:var(--text-mid);line-height:1.6;}
+.tl-body.think{color:var(--text);}
+.tl-body.alert{color:var(--text);}
+.tl-body.done{color:var(--green);font-weight:600;}
+.tl-body.report{color:var(--text);font-size:12px;white-space:pre-line;line-height:1.75;}
+.fleet-tiles{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
+.ftile{padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;border:1px solid;}
+.ftile.crit{background:var(--red-bg);color:var(--red);border-color:var(--red-bdr);}
+.ftile.warn{background:var(--orange-bg);color:var(--orange);border-color:var(--orange-bdr);}
+.ftile.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-bdr);}
+.ftile.offline{background:var(--gray-bg);color:var(--text-dim);border-color:var(--gray-bdr);}
+.tl-mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.5;}
+.wo-section{flex-shrink:0;border-top:2px solid var(--border);max-height:220px;overflow-y:auto;}
+.wo-sec-head{padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-mid);}
+.wo-card{margin:8px 10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border2);border-left:4px solid;background:var(--surface);animation:wofade 0.3s ease;}
+@keyframes wofade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.wo-card.CRITICAL{border-left-color:var(--red);}.wo-card.HIGH{border-left-color:var(--orange);}
+.wo-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.wo-id{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mid);}
+.wo-pump-id{font-size:14px;font-weight:700;}
+.wo-cause{font-size:13px;color:var(--text-mid);margin-bottom:5px;line-height:1.6;}
+.wo-action{font-size:12px;color:var(--text);background:var(--surface2);padding:7px 9px;border-radius:6px;border:1px solid var(--border);line-height:1.6;}
+.wo-empty{padding:16px;text-align:center;font-size:13px;color:var(--text-mid);}
+.agent-footer{padding:12px 14px;border-top:2px solid var(--border);flex-shrink:0;background:var(--surface2);}
+.btn-run{width:100%;padding:13px;background:var(--blue);border:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;border-radius:10px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-run:hover:not(:disabled){background:var(--blue-dk);box-shadow:0 4px 14px rgba(10,110,189,0.3);transform:translateY(-1px);}
+.btn-run:disabled{background:var(--gray-bg);color:var(--text-dim);cursor:not-allowed;transform:none;}
+.btn-run.running{background:var(--blue-lt);color:var(--blue);border:2px solid var(--blue-bdr);}
+.spinner{width:15px;height:15px;border:2px solid rgba(10,110,189,0.2);border-top-color:var(--blue);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* ── INVESTIGATION ZONES ── */
+.zone-header{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);border-top:1px solid var(--border);}
+.zone-header-red   {background:#FEF2F2;border-left:4px solid var(--red);}
+.zone-header-blue  {background:#EFF6FF;border-left:4px solid var(--blue);}
+.zone-header-orange{background:#FFFBEB;border-left:4px solid var(--orange);}
+.zone-header-green {background:#ECFDF5;border-left:4px solid var(--green);}
+.zone-step{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:1px;}
+.zone-title{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);flex:1;}
+.zone-body{padding:14px 16px;background:var(--surface);}
+.zone-loading{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-mid);}
+.spinner-sm{width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+.detect-alert{background:var(--red-bg);border:1px solid var(--red-bdr);border-radius:8px;padding:14px 16px;}
+.detect-pump{font-size:22px;font-weight:800;color:var(--red);margin-bottom:4px;}
+.detect-msg{font-size:14px;color:var(--text);font-weight:500;line-height:1.5;}
+.detect-false{background:var(--green-bg);border:1px solid var(--green-bdr);border-radius:8px;padding:14px 16px;}
+.detect-false .detect-pump{color:var(--green);}
+.diag-card{background:var(--blue-lt);border:1px solid var(--blue-bdr);border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+.diag-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:6px;}
+.diag-text{font-size:14px;color:var(--text);font-weight:500;line-height:1.6;}
+.diag-compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.diag-peer{background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;}
+.diag-peer-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;}
+.diag-peer-label.bad{color:var(--red);}.diag-peer-label.good{color:var(--green);}
+.diag-peer-val{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;}
+.diag-peer-val.bad{color:var(--red);}.diag-peer-val.good{color:var(--green);}
+.diag-peer-sub{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.action-pending{display:flex;align-items:center;gap:10px;background:var(--orange-bg);border:1px solid var(--orange-bdr);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
+.action-pending-icon{font-size:20px;flex-shrink:0;}
+.action-pending-text{font-size:13px;font-weight:600;color:var(--orange);}
+.action-card{background:var(--surface);border:1px solid var(--border2);border-left:4px solid;border-radius:0 8px 8px 0;padding:14px 16px;animation:wofade 0.3s ease;}
+.action-card.CRITICAL{border-left-color:var(--red);}
+.action-card.HIGH{border-left-color:var(--orange);}
+.action-card.MEDIUM{border-left-color:#FBBF24;}
+.action-wo-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.action-wo-id{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);}
+.action-wo-pump{font-size:16px;font-weight:800;color:var(--text);}
+.action-cause{font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:8px;}
+.action-steps{font-size:12px;color:var(--text);background:var(--surface2);border-radius:6px;padding:10px 12px;border:1px solid var(--border);line-height:1.8;}
+.summary-grid{display:flex;flex-direction:column;gap:0;}
+.summary-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);}
+.summary-row:last-child{border-bottom:none;}
+.summary-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.summary-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:3px;}
+.summary-val{font-size:13px;color:var(--text);font-weight:500;line-height:1.5;}
+.btn-export{flex:1;padding:9px 12px;background:var(--surface);border:1px solid var(--blue-bdr);border-radius:8px;font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;text-align:center;transition:all 0.12s;display:block;}
+.btn-export:hover{background:var(--blue-lt);border-color:var(--blue);}
+/* Tabs */
+.tab-bar{display:flex;border-top:1px solid var(--border);}
+.tab-btn{flex:1;padding:8px 12px;background:var(--surface2);border:none;border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text-mid);cursor:pointer;transition:all 0.12s;}
+.tab-btn:hover{color:var(--text);background:var(--surface);}
+.tab-btn.tab-active{color:var(--blue);background:var(--surface);border-bottom-color:var(--blue);}
+/* Thinking pane items */
+.think-item{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+.think-item:last-child{border-bottom:none;}
+.think-icon{font-size:13px;flex-shrink:0;margin-top:1px;}
+.think-text{font-size:12px;color:var(--text-mid);line-height:1.6;white-space:pre-line;}
+.think-item.think-tool .think-text{color:var(--gold);font-weight:600;font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;}
+.think-item.think-think .think-text{color:var(--text);}
+.think-item.think-data .think-text{color:var(--text-dim);font-family:'DM Mono',monospace;font-size:11px;}
+.think-item.think-report .think-text{color:var(--text);background:var(--surface2);border-radius:6px;padding:8px 10px;border-top:2px solid var(--gold);font-size:11px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-diamond"></div>
+    <span class="logo-name">Chevron</span>
+  </div>
+  <div class="logo-divider"></div>
+  <span class="header-title">Pump Intelligence Platform — Hack Island</span>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot" id="liveDot"></div><span id="liveText">FLEET MONITORING</span></div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<div class="scenario-bar">
+  <span class="scenario-label">Inject Fault</span>
+  <button class="scen-btn active" id="btn-bearing_failure" onclick="selectScenario('bearing_failure')">
+    <div class="scen-icon red">🔩</div>
+    <div><span class="scen-name">Bearing Failure</span><span class="scen-sub">PUMP-07 · Platform B</span></div>
+    <span class="badge badge-red" style="margin-left:auto">CRITICAL</span>
+  </button>
+  <button class="scen-btn" id="btn-coolant_blockage" onclick="selectScenario('coolant_blockage')">
+    <div class="scen-icon orange">🌡️</div>
+    <div><span class="scen-name">Coolant Blockage</span><span class="scen-sub">PUMP-12 · Platform A</span></div>
+    <span class="badge badge-orange" style="margin-left:auto">HIGH</span>
+  </button>
+  <button class="scen-btn" id="btn-false_positive" onclick="selectScenario('false_positive')">
+    <div class="scen-icon green">✓</div>
+    <div><span class="scen-name">False Positive</span><span class="scen-sub">PUMP-03 · Platform C</span></div>
+    <span class="badge badge-green" style="margin-left:auto">NOMINAL</span>
+  </button>
+  <button class="clear-btn" onclick="clearWorkOrders()">⟳ Clear</button>
+</div>
+
+<div class="layout">
+  <div class="col">
+    <div class="sec-head"><span class="sec-title">Fleet</span><span class="badge badge-gray" id="fleetCount">7 PUMPS</span></div>
+    <div class="fleet-scroll" id="fleetList"></div>
+  </div>
+
+  <div class="col">
+    <div class="sec-head"><span class="sec-title" id="chartLabel">Sensor Trend — PUMP-07</span><span class="badge badge-gray" id="scenLabel">BEARING FAILURE</span></div>
+    <div class="gauge-strip" id="gaugeGrid"></div>
+    <div class="chart-area">
+      <div class="chart-title">Temperature · Pressure · Flow Rate · Load % · Vibration</div>
+      <div class="chart-svg-wrap"><svg class="chart" id="chartSvg" viewBox="0 0 600 190" preserveAspectRatio="none"></svg></div>
+    </div>
+    <div class="chart-legend">
+      <div class="leg"><div class="leg-line" style="background:#DC2626"></div>Temp °C</div>
+      <div class="leg"><div class="leg-line" style="background:#2563EB"></div>Pressure</div>
+      <div class="leg"><div class="leg-line" style="background:#059669"></div>Flow</div>
+      <div class="leg"><div class="leg-line" style="background:#D97706"></div>Load %</div>
+      <div class="leg"><div class="leg-line" style="background:#7C3AED"></div>Vibration</div>
+    </div>
+    <div class="cmp-strip" id="cmpStrip">
+      <div class="cmp-title">Fleet Comparison — Agent Analysis</div>
+      <div id="cmpBody"></div>
+    </div>
+    <div class="sec-head" style="flex-shrink:0;"><span class="sec-title">Maintenance History</span></div>
+    <div class="hist-scroll" id="histScroll"></div>
+  </div>
+
+  <!-- COL 3: Agent — 4 clear zones -->
+  <div class="col" style="background:var(--surface2);">
+    <div class="sec-head" style="flex-direction:column;align-items:stretch;gap:0;padding:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;">
+        <span class="sec-title">AI Investigation</span>
+        <span class="badge badge-blue" id="agentStatus">READY</span>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn tab-active" id="tabResults" onclick="setTab('results')">Results</button>
+        <button class="tab-btn" id="tabThinking" onclick="setTab('thinking');flushThoughts()">Agent Thinking</button>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;" id="agentOuter">
+
+      <!-- Empty state -->
+      <div class="agent-empty" id="agentEmpty">
+        <div class="empty-icon">🤖</div>
+        <div class="empty-title">Ready to Investigate</div>
+        <div class="empty-sub">Select a fault scenario above,<br>then press Run Investigation.<br><br>The agent scans all 7 pumps,<br>finds the root cause, and takes action.</div>
+      </div>
+
+      <!-- ZONE 1: DETECTION -->
+      <div id="zoneDetection" style="display:none;flex-shrink:0;">
+        <div class="zone-header zone-header-red">
+          <span class="zone-step">01</span>
+          <span class="zone-title">DETECTION</span>
+          <span class="zone-badge" id="detectionBadge"></span>
+        </div>
+        <div class="zone-body" id="detectionBody">
+          <div class="zone-loading" id="detectionLoading"><div class="spinner-sm"></div> Scanning fleet...</div>
+        </div>
+      </div>
+
+      <!-- ZONE 2: DIAGNOSIS -->
+      <div id="zoneDiagnosis" style="display:none;flex-shrink:0;">
+        <div class="zone-header zone-header-blue">
+          <span class="zone-step">02</span>
+          <span class="zone-title">DIAGNOSIS</span>
+          <span class="zone-badge" id="diagnosisBadge"></span>
+        </div>
+        <div class="zone-body" id="diagnosisBody">
+          <div class="zone-loading" id="diagnosisLoading"><div class="spinner-sm"></div> Analyzing data...</div>
+        </div>
+      </div>
+
+      <!-- ZONE 3: ACTION -->
+      <div id="zoneAction" style="display:none;flex-shrink:0;">
+        <div class="zone-header zone-header-orange">
+          <span class="zone-step">03</span>
+          <span class="zone-title">ACTION TAKEN</span>
+          <span class="zone-badge" id="actionBadge"></span>
+        </div>
+        <div class="zone-body" id="actionBody">
+          <div class="zone-loading" id="actionLoading"><div class="spinner-sm"></div> Creating work order...</div>
+        </div>
+      </div>
+
+      <!-- ZONE 4: SUMMARY -->
+      <div id="zoneSummary" style="display:none;flex-shrink:0;">
+        <div class="zone-header zone-header-green">
+          <span class="zone-step">04</span>
+          <span class="zone-title">SUMMARY</span>
+          <span class="zone-badge badge-green">COMPLETE</span>
+        </div>
+        <div class="zone-body" id="summaryBody"></div>
+      </div>
+
+      <!-- Log (collapsible detail) -->
+      <div id="agentLog" style="flex:1;display:none;border-top:1px solid var(--border);"></div>
+
+    </div>
+
+    <!-- Thinking pane (hidden by default) -->
+    <div id="thinkingPane" style="display:none;flex:1;overflow-y:auto;flex-direction:column;padding:10px 14px;gap:0;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;background:var(--surface);"></div>
+
+    <!-- Exports + Run button -->
+    <div class="agent-footer" style="display:flex;flex-direction:column;gap:8px;">
+      <div id="exportRow" style="display:none;gap:8px;display:none;">
+        <a id="exportWO" href="http://localhost:8000/export/work_orders" download class="btn-export">⬇ Work Orders CSV</a>
+        <a id="exportParts" href="http://localhost:8000/export/parts" download class="btn-export">⬇ Parts List CSV</a>
+      </div>
+      <button class="btn-run" id="btnRun" onclick="runInvestigation()">▶ Run Fleet Investigation</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API="http://localhost:8000";
+const FLEET={"PUMP-02":{platform:"Platform B",status:"NOMINAL",latestTemp:72,latestVib:2.0,latestFlow:314,latestLoad:63,latestPres:18.0},"PUMP-04":{platform:"Platform C",status:"NOMINAL",latestTemp:77,latestVib:2.2,latestFlow:309,latestLoad:70,latestPres:17.9},"PUMP-09":{platform:"Platform A",status:"NOMINAL",latestTemp:75,latestVib:2.1,latestFlow:320,latestLoad:66,latestPres:18.1},"PUMP-11":{platform:"Platform B",status:"OFFLINE",latestTemp:null}};
+const SCENARIOS={bearing_failure:{pump_id:"PUMP-07",platform:"Platform B",status:"CRITICAL",location:"Platform B — Injection Line",desc:"Temp and vibration rising steadily for 4 hours despite constant load. Bearing degradation suspected.",readings:[{ts:"06:00",temp:72,pressure:18.2,flow:312,load:64,vib:2.1,delta:0},{ts:"06:30",temp:75,pressure:18.0,flow:310,load:65,vib:2.6,delta:3},{ts:"07:00",temp:79,pressure:17.9,flow:308,load:64,vib:3.4,delta:7},{ts:"07:30",temp:85,pressure:17.8,flow:305,load:65,vib:4.8,delta:13},{ts:"08:00",temp:91,pressure:17.6,flow:301,load:64,vib:6.7,delta:19},{ts:"08:30",temp:98,pressure:17.5,flow:297,load:65,vib:9.1,delta:26},{ts:"09:00",temp:107,pressure:17.3,flow:292,load:64,vib:12.4,delta:35},{ts:"09:30",temp:118,pressure:17.1,flow:285,load:65,vib:16.2,delta:46}],history:[{date:"2024-09-15",type:"Scheduled PM",note:"Bearing lubrication, normal wear"},{date:"2024-06-02",type:"Bearing Replacement",note:"Replaced rear bearing set — 14 months service"},{date:"2024-01-10",type:"Scheduled PM",note:"All readings nominal"}],baseline:"PUMP-02"},coolant_blockage:{pump_id:"PUMP-12",platform:"Platform A",status:"HIGH",location:"Platform A — Transfer Line",desc:"Pressure rising, flow dropping, temp climbing fast. Partial blockage in cooling circuit suspected.",readings:[{ts:"06:00",temp:73,pressure:18.1,flow:318,load:67,vib:1.9,delta:0},{ts:"06:20",temp:78,pressure:19.4,flow:298,load:68,vib:2.0,delta:5},{ts:"06:40",temp:86,pressure:21.2,flow:271,load:70,vib:2.2,delta:13},{ts:"07:00",temp:95,pressure:23.7,flow:238,load:73,vib:2.4,delta:22},{ts:"07:20",temp:104,pressure:26.1,flow:201,load:76,vib:2.5,delta:31},{ts:"07:40",temp:112,pressure:28.4,flow:167,load:79,vib:2.7,delta:39}],history:[{date:"2025-01-28",type:"Filter Inspection",note:"Coolant filter at 70% — flagged for next PM"},{date:"2024-11-05",type:"Scheduled PM",note:"Full coolant flush, new filter"},{date:"2024-07-19",type:"Unplanned — Overtemp",note:"Scale buildup in cooling line, cleaned"}],baseline:"PUMP-09"},false_positive:{pump_id:"PUMP-03",platform:"Platform C",status:"WARNING",location:"Platform C — Primary Injection",desc:"Temp briefly crossed warning threshold during a planned high-load surge. All other readings stayed normal.",readings:[{ts:"06:00",temp:74,pressure:17.9,flow:305,load:68,vib:1.8,delta:0},{ts:"06:15",temp:79,pressure:18.1,flow:341,load:82,vib:1.9,delta:5},{ts:"06:30",temp:87,pressure:18.4,flow:378,load:94,vib:2.0,delta:13},{ts:"06:45",temp:91,pressure:18.6,flow:392,load:98,vib:2.1,delta:17},{ts:"07:00",temp:88,pressure:18.3,flow:371,load:92,vib:2.0,delta:14},{ts:"07:15",temp:82,pressure:18.1,flow:340,load:83,vib:1.9,delta:8},{ts:"07:30",temp:76,pressure:17.9,flow:312,load:70,vib:1.8,delta:2}],history:[{date:"2025-02-20",type:"Scheduled PM",note:"Full inspection — all systems nominal, bearings excellent"},{date:"2024-10-11",type:"Scheduled PM",note:"Minor seal replacement, otherwise clean"}],baseline:"PUMP-04"}};
+
+let activeScenario='bearing_failure', running=false, workOrders=[];
+// Investigation state
+let iState = { detected:null, diagnosed:null, action:null, report:null, isFalsePositive:false };
+
+function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false});}
+setInterval(updateClock,1000); updateClock();
+
+function renderFleet(){
+  const s=SCENARIOS[activeScenario];
+  const all={...FLEET};
+  const lr=s.readings[s.readings.length-1];
+  all[s.pump_id]={platform:s.platform,status:s.status,latestTemp:lr.temp,latestVib:lr.vib,latestFlow:lr.flow,latestLoad:lr.load,latestPres:lr.pressure};
+  const order=["PUMP-07","PUMP-12","PUMP-03","PUMP-02","PUMP-04","PUMP-09","PUMP-11"];
+  const sorted=order.map(id=>({id,data:all[id]||{status:"NOMINAL",platform:"Unknown"}}));
+  const alerts=sorted.filter(p=>["CRITICAL","HIGH","WARNING"].includes(p.data.status)).length;
+  document.getElementById('fleetCount').textContent=`${sorted.length} PUMPS · ${alerts} ALERT`;
+  document.getElementById('fleetList').innerHTML=sorted.map(({id,data})=>{
+    const isA=id===s.pump_id;
+    const bc={CRITICAL:'badge-red',HIGH:'badge-orange',WARNING:'badge-orange',NOMINAL:'badge-green',OFFLINE:'badge-gray'}[data.status]||'badge-gray';
+    const tc=data.latestTemp>=105?'hot':data.latestTemp>=85?'warm':'ok';
+    return `<div class="fleet-card st-${data.status}${isA?' active':''}">
+      <div class="fc-top"><span class="fc-id">${id}</span><span class="badge ${bc}">${data.status}</span></div>
+      <div class="fc-loc">${data.platform}</div>
+      ${data.latestTemp!=null?`<div class="fc-metrics"><span class="fc-m ${tc}">${data.latestTemp}°C</span><span class="fc-m dim">·</span><span class="fc-m dim">${data.latestVib} mm/s</span><span class="fc-m dim">·</span><span class="fc-m dim">${data.latestLoad}%</span></div>`:`<div class="fc-m dim">Offline</div>`}
+    </div>`;
+  }).join('');
+}
+
+function selectScenario(key){
+  if(running)return;
+  activeScenario=key;
+  document.querySelectorAll('.scen-btn[id^="btn-"]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+key).classList.add('active');
+  document.getElementById('cmpStrip').classList.remove('visible');
+  renderFleet(); renderPumpDetail(); renderChart(); resetAgent();
+}
+
+function renderPumpDetail(){
+  const s=SCENARIOS[activeScenario];
+  document.getElementById('chartLabel').textContent=`Sensor Trend — ${s.pump_id}`;
+  document.getElementById('scenLabel').textContent=activeScenario.replace(/_/g,' ').replace(/\w/g,c=>c.toUpperCase());
+  const isAlert=s.status==='CRITICAL'||s.status==='HIGH';
+  document.getElementById('liveDot').className=isAlert?'live-dot alert':'live-dot';
+  document.getElementById('liveText').textContent=isAlert?'ALERT ACTIVE':'FLEET MONITORING';
+  const R=s.readings,l=R[R.length-1],f=R[0];
+  const dT=l.temp-f.temp,dV=(l.vib-f.vib).toFixed(1),dF=l.flow-f.flow,dP=(l.pressure-f.pressure).toFixed(1);
+  function cls(v,w,c){return v>=c?'crit':v>=w?'warn':'ok';}
+  document.getElementById('gaugeGrid').innerHTML=`
+    <div class="gauge ${cls(l.temp,85,105)}"><div class="g-label">Temperature</div><div class="g-val">${l.temp}<span class="g-unit">°C</span></div><div class="g-delta ${dT>0?'up':''}">${dT>0?'▲':'→'} +${Math.abs(dT)}° total rise</div></div>
+    <div class="gauge ${cls(l.vib,5,10)}"><div class="g-label">Vibration</div><div class="g-val">${l.vib.toFixed(1)}<span class="g-unit">mm/s</span></div><div class="g-delta ${dV>0?'up':''}">${dV>0?'▲':'→'} +${Math.abs(dV)} from start</div></div>
+    <div class="gauge ${cls(l.pressure,22,27)}"><div class="g-label">Pressure</div><div class="g-val">${l.pressure.toFixed(1)}<span class="g-unit">bar</span></div><div class="g-delta ${dP>0?'up':''}">${dP>0?'▲':'→'} ${dP>0?'+':''}${dP} bar</div></div>
+    <div class="gauge ${l.flow<220?'crit':l.flow<280?'warn':'ok'}"><div class="g-label">Flow Rate</div><div class="g-val">${l.flow}<span class="g-unit">L/min</span></div><div class="g-delta ${dF<0?'down':''}">${dF<0?'▼':'→'} ${dF} L/min</div></div>
+    <div class="gauge ${cls(l.load,80,95)}"><div class="g-label">Load</div><div class="g-val">${l.load}<span class="g-unit">%</span></div><div class="g-delta">Duty cycle</div></div>
+    <div class="gauge ${cls(l.delta,10,25)}"><div class="g-label">Temp Rise</div><div class="g-val">${l.delta}<span class="g-unit">°C</span></div><div class="g-delta ${l.delta>0?'up':''}">Total rise</div></div>`;
+  document.getElementById('histScroll').innerHTML=s.history.map(h=>`
+    <div class="hist-item"><div class="hist-dot"></div><div>
+      <div class="hist-date">${h.date}</div>
+      <div class="hist-type">${h.type}</div>
+      <div class="hist-note">${h.note}</div>
+    </div></div>`).join('');
+}
+
+function renderChart(){
+  const s=SCENARIOS[activeScenario],R=s.readings,svg=document.getElementById('chartSvg');
+  const W=600,H=190,P={t:14,r:20,b:26,l:36},iW=W-P.l-P.r,iH=H-P.t-P.b,n=R.length;
+  const xS=i=>P.l+i/(n-1)*iW;
+  function norm(k,mn,mx){return R.map((r,i)=>({x:xS(i),y:P.t+iH-(r[k]-mn)/(mx-mn)*iH}));}
+  function poly(pts,clr,w){const d=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');return `<path d="${d}" fill="none" stroke="${clr}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;}
+  function area(pts,clr){const l=pts[pts.length-1],f=pts[0];const d=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ')+` L${l.x} ${P.t+iH} L${f.x} ${P.t+iH} Z`;return `<path d="${d}" fill="${clr}" opacity="0.07"/>`;}
+  const thY=P.t+iH-(105-60)/(140-60)*iH;
+  const grid=[70,85,105,120].map(v=>{const y=P.t+iH-(v-60)/(140-60)*iH;return `<line x1="${P.l}" y1="${y}" x2="${W-P.r}" y2="${y}" stroke="#E5E7EB" stroke-width="1"/><text x="${P.l-3}" y="${y+3}" text-anchor="end" font-size="8" fill="#6B7280" font-family="DM Mono">${v}°</text>`;}).join('');
+  const xl=R.map((r,i)=>`<text x="${xS(i).toFixed(1)}" y="${P.t+iH+16}" text-anchor="middle" font-size="8" fill="#6B7280" font-family="DM Mono">${r.ts}</text>`).join('');
+  const tP=norm('temp',60,140),pP=norm('pressure',15,32),fP=norm('flow',150,420),lP=norm('load',50,100),vP=norm('vib',0,20);
+  svg.innerHTML=`${grid}<line x1="${P.l}" y1="${thY}" x2="${W-P.r}" y2="${thY}" stroke="#FCA5A5" stroke-width="1" stroke-dasharray="5,4"/><text x="${W-P.r+2}" y="${thY+3}" font-size="8" fill="#FCA5A5" font-family="DM Mono">LIMIT</text>${area(tP,'#DC2626')}${poly(fP,'#059669',1.5)}${poly(lP,'#D97706',1.5)}${poly(pP,'#2563EB',1.5)}${poly(vP,'#7C3AED',1.5)}${poly(tP,'#DC2626',2.5)}${xl}<circle cx="${xS(n-1)}" cy="${tP[n-1].y}" r="4" fill="#DC2626" stroke="white" stroke-width="2"/>`;
+}
+
+function showComparison(suspectId,baselineId){
+  const s=SCENARIOS[activeScenario],sr=s.readings[s.readings.length-1],bd=FLEET[baselineId]||{latestTemp:72,latestVib:2.0,latestFlow:314,latestLoad:63};
+  const td=sr.temp-(bd.latestTemp||72),vd=(sr.vib-(bd.latestVib||2.0)).toFixed(1);
+  document.getElementById('cmpStrip').classList.add('visible');
+  document.getElementById('cmpBody').innerHTML=`
+    <div class="cmp-row-header"><div></div><div class="cmp-col-label suspect">⚠ ${suspectId}</div><div class="cmp-col-label baseline">✓ ${baselineId}</div></div>
+    <div class="cmp-data-row"><span class="cmp-metric">Temperature</span><span class="cmp-val bad">${sr.temp}°C</span><span class="cmp-val good">${bd.latestTemp||72}°C</span></div>
+    <div class="cmp-data-row"><span class="cmp-metric">Vibration</span><span class="cmp-val ${sr.vib>5?'bad':'good'}">${sr.vib} mm/s</span><span class="cmp-val good">${bd.latestVib||2.0} mm/s</span></div>
+    <div class="cmp-data-row"><span class="cmp-metric">Flow Rate</span><span class="cmp-val ${sr.flow<220?'bad':'good'}">${sr.flow} L/min</span><span class="cmp-val good">${bd.latestFlow||314} L/min</span></div>
+    <div class="cmp-data-row"><span class="cmp-metric">Load</span><span class="cmp-val">${sr.load}%</span><span class="cmp-val">${bd.latestLoad||63}%</span></div>
+    <div class="delta-banner ${td>20?'alert':'ok'}">${td>20?`⚡ <strong>${suspectId}</strong> is <strong>${td}°C hotter</strong> than <strong>${baselineId}</strong> at the same load — rules out environment. The fault is internal.`:`✓ Only ${td}°C gap vs baseline — within normal range for load conditions. Likely a false positive.`}</div>`;
+}
+
+// ── Zone rendering ─────────────────────────────────────────────────────────
+
+function showZone(id){ document.getElementById(id).style.display='block'; }
+
+function setDetection(text, isFalse){
+  showZone('zoneDetection');
+  const s = SCENARIOS[activeScenario];
+  const lr = s.readings[s.readings.length-1];
+  document.getElementById('detectionLoading').style.display='none';
+  const badge = document.getElementById('detectionBadge');
+  if(isFalse){
+    badge.className='badge badge-green'; badge.textContent='NO FAULT';
+    document.getElementById('detectionBody').innerHTML=`
+      <div class="detect-false">
+        <div class="detect-pump">✓ ${s.pump_id}</div>
+        <div class="detect-msg">${text||'Temperature spike detected — but within expected range for current load.'}</div>
+      </div>`;
+  } else {
+    badge.className='badge badge-red'; badge.textContent='FAULT DETECTED';
+    document.getElementById('detectionBody').innerHTML=`
+      <div class="detect-alert">
+        <div class="detect-pump">⚠ ${s.pump_id} — ${lr.temp}°C</div>
+        <div class="detect-msg">${text||'Pump is overheating. Anomaly confirmed against fleet baseline.'}</div>
+      </div>`;
+  }
+}
+
+function setDiagnosis(text, wo){
+  showZone('zoneDiagnosis');
+  document.getElementById('diagnosisLoading').style.display='none';
+  const badge = document.getElementById('diagnosisBadge');
+  const s = SCENARIOS[activeScenario];
+  const bl = s.baseline;
+  const bd = FLEET[bl]||{latestTemp:72,latestVib:2.0};
+  const lr = s.readings[s.readings.length-1];
+  const td = lr.temp - (bd.latestTemp||72);
+  badge.className='badge badge-blue'; badge.textContent='ROOT CAUSE IDENTIFIED';
+  document.getElementById('diagnosisBody').innerHTML=`
+    <div class="diag-card">
+      <div class="diag-label">Root Cause</div>
+      <div class="diag-text">${text||'Bearing degradation due to extended runtime without maintenance.'}</div>
+    </div>
+    <div class="diag-compare">
+      <div class="diag-peer">
+        <div class="diag-peer-label bad">⚠ ${s.pump_id} (suspect)</div>
+        <div class="diag-peer-val bad">${lr.temp}°C</div>
+        <div class="diag-peer-sub">${lr.vib} mm/s vibration · ${lr.load}% load</div>
+      </div>
+      <div class="diag-peer">
+        <div class="diag-peer-label good">✓ ${bl} (healthy)</div>
+        <div class="diag-peer-val good">${bd.latestTemp||72}°C</div>
+        <div class="diag-peer-sub">${bd.latestVib||2.0} mm/s vibration · ${bd.latestLoad||63}% load</div>
+      </div>
+    </div>`;
+}
+
+function setActionPending(pumpId, severity){
+  showZone('zoneAction');
+  document.getElementById('actionBadge').className='badge badge-orange';
+  document.getElementById('actionBadge').textContent='IN PROGRESS';
+  document.getElementById('actionBody').innerHTML=`
+    <div class="action-pending">
+      <div class="action-pending-icon">⚡</div>
+      <div class="action-pending-text">Creating maintenance work order for ${pumpId} (${severity})...</div>
+    </div>`;
+}
+
+function setActionComplete(wo){
+  document.getElementById('actionBadge').className='badge badge-red';
+  document.getElementById('actionBadge').textContent=wo.severity;
+  document.getElementById('actionBody').innerHTML=`
+    <div class="action-card ${wo.severity}">
+      <div class="action-wo-row">
+        <span class="action-wo-id">${wo.work_order_id}</span>
+        <span class="action-wo-pump">${wo.pump_id}</span>
+        <span class="badge badge-${wo.severity==='CRITICAL'?'red':'orange'}" style="margin-left:auto">${wo.severity}</span>
+      </div>
+      <div class="action-cause">${wo.root_cause}</div>
+      <div class="action-steps">${wo.recommended_action}</div>
+    </div>`;
+  workOrders.push(wo);
+}
+
+function setSummary(reportText, wo, isFalse){
+  showZone('zoneSummary');
+  const s = SCENARIOS[activeScenario];
+  const lr = s.readings[s.readings.length-1];
+
+  // Parse key evidence from report if available
+  let evidence = '';
+  const evMatch = reportText && reportText.match(/Key evidence:(.+)/i);
+  if(evMatch) evidence = evMatch[1].trim();
+
+  let rows;
+  if(isFalse){
+    rows = [
+      {icon:'🔍', label:'What was detected', val:`Temperature spike on ${s.pump_id} — reached ${lr.temp}°C, briefly above the 85°C warning threshold.`},
+      {icon:'🧠', label:'What was decided', val:'No fault. This is a false positive.'},
+      {icon:'💡', label:'Why', val:`Load reached ${lr.load}% during a planned surge operation. Temperature tracked load and returned to baseline — not a mechanical issue.`},
+      {icon:'✅', label:'What was updated', val:'No work order created. Pump continues operating normally. No parts required.'},
+    ];
+  } else {
+    rows = [
+      {icon:'🔍', label:'What was detected', val:`Overheating on ${s.pump_id} — temperature reached ${lr.temp}°C and kept climbing over ${s.readings.length} readings.`},
+      {icon:'🧠', label:'What was decided', val:`Real fault — ${wo ? wo.severity : 'HIGH'} severity. Immediate maintenance required.`},
+      {icon:'💡', label:'Why', val:evidence || (wo ? wo.root_cause : 'Sensor pattern confirmed internal pump fault, not environmental.')},
+      {icon:'📋', label:'What was updated', val:wo ? `Work order ${wo.work_order_id} created. Parts required: ${wo.parts_required.join(', ')}. Estimated downtime: ${wo.estimated_downtime_hours} hours.` : 'Work order created. Download CSVs below.'},
+    ];
+  }
+
+  document.getElementById('summaryBody').innerHTML=`<div class="summary-grid">${rows.map(r=>`
+    <div class="summary-row">
+      <span class="summary-icon">${r.icon}</span>
+      <div><div class="summary-label">${r.label}</div><div class="summary-val">${r.val}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+function resetAgent(){
+  iState = { detected:null, diagnosed:null, action:null, report:null, isFalsePositive:false };
+  workOrders = [];
+  thinkItems = [];
+  activeTab = 'results';
+  document.getElementById('tabResults').classList.add('tab-active');
+  document.getElementById('tabThinking').classList.remove('tab-active');
+  document.getElementById('agentOuter').style.display='flex';
+  document.getElementById('thinkingPane').style.display='none';
+  document.getElementById('thinkingPane').innerHTML='';
+  ['zoneDetection','zoneDiagnosis','zoneAction','zoneSummary'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  document.getElementById('agentEmpty').style.display='flex';
+  document.getElementById('exportRow').style.display='none';
+  document.getElementById('agentStatus').className='badge badge-blue';
+  document.getElementById('agentStatus').textContent='READY';
+  document.getElementById('btnRun').className='btn-run';
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('btnRun').innerHTML='▶ Run Fleet Investigation';
+  document.getElementById('cmpStrip').classList.remove('visible');
+  // Reset zone loading states
+  document.getElementById('detectionLoading').style.display='flex';
+  document.getElementById('diagnosisLoading').style.display='flex';
+  document.getElementById('actionLoading').style.display='flex';
+}
+
+// ── Thinking tab ──────────────────────────────────────────────────────────
+let activeTab = 'results'; // 'results' | 'thinking'
+let thinkItems = [];
+
+function setTab(tab){
+  activeTab = tab;
+  document.getElementById('tabResults').classList.toggle('tab-active', tab==='results');
+  document.getElementById('tabThinking').classList.toggle('tab-active', tab==='thinking');
+  document.getElementById('agentOuter').style.display = tab==='results' ? 'flex' : 'none';
+  document.getElementById('thinkingPane').style.display = tab==='thinking' ? 'flex' : 'none';
+}
+
+function addThought(type, text){
+  thinkItems.push({type, text});
+  if(activeTab !== 'thinking') return;
+  renderThinkItem({type, text});
+}
+
+function renderThinkItem({type, text}){
+  const pane = document.getElementById('thinkingPane');
+  const div = document.createElement('div');
+  div.className = `think-item think-${type}`;
+  const icons = {tool:'⚙', think:'💭', data:'📊', report:'📋'};
+  div.innerHTML = `<span class="think-icon">${icons[type]||'·'}</span><span class="think-text">${text}</span>`;
+  pane.appendChild(div);
+  pane.scrollTop = pane.scrollHeight;
+}
+
+// Flush buffered thoughts when switching to thinking tab
+function flushThoughts(){
+  const pane = document.getElementById('thinkingPane');
+  pane.innerHTML = '';
+  thinkItems.forEach(renderThinkItem);
+  pane.scrollTop = pane.scrollHeight;
+}
+
+async function runInvestigation(){
+  if(running)return; running=true;
+  const btn=document.getElementById('btnRun');
+  btn.disabled=true; btn.className='btn-run running';
+  btn.innerHTML='<div class="spinner"></div> Investigating...';
+  document.getElementById('agentStatus').className='badge badge-orange';
+  document.getElementById('agentStatus').textContent='RUNNING';
+  document.getElementById('agentEmpty').style.display='none';
+
+  // Show detection zone immediately as "scanning"
+  showZone('zoneDetection');
+
+  let lastWO = null;
+  let allWOs = {};
+  let reportText = '';
+  let isFalse = false;
+  let thinkLog = []; // for live thinking tab
+
+  try{
+    const es=new EventSource(`${API}/investigate/${activeScenario}`);
+
+    es.addEventListener('detection', e=>{
+      const d=JSON.parse(e.data);
+      // Only mark false positive if the agent EXPLICITLY says so — not just mentions the words
+      isFalse = activeScenario === 'false_positive' && !lastWO;
+      // Better: trust the text only if it says "no fault" as a conclusion, not as a contrast
+      const txt = d.text.toLowerCase();
+      isFalse = txt.startsWith('no fault') || txt.startsWith('false positive') || txt.includes('no overheating') || txt.includes('not a fault');
+      setDetection(d.text, isFalse);
+      if(!isFalse){ showZone('zoneDiagnosis'); showComparison(SCENARIOS[activeScenario].pump_id, SCENARIOS[activeScenario].baseline); }
+    });
+
+    es.addEventListener('diagnosis', e=>{
+      const d=JSON.parse(e.data);
+      setDiagnosis(d.text, lastWO);
+    });
+
+    es.addEventListener('tool_call', e=>{
+      const d=JSON.parse(e.data);
+      if(d.tool==='compare_pumps') showComparison(d.input.pump_id_a, d.input.pump_id_b);
+      if(d.tool==='get_fleet_status') showZone('zoneDetection');
+      // Add to thinking log
+      const toolLabels={get_fleet_status:'Scanning fleet',get_pump_sensors:'Reading sensor data',compare_pumps:`Comparing ${d.input.pump_id_a||''} vs ${d.input.pump_id_b||''}`,get_pump_maintenance:'Checking maintenance history',get_pump_parts:'Checking parts inventory',get_pump_conditions:'Checking operating conditions',create_work_order:'Creating work order'};
+      addThought('tool', toolLabels[d.tool]||d.tool);
+    });
+
+    es.addEventListener('thought', e=>{
+      const d=JSON.parse(e.data);
+      // NEVER use thought content to set isFalse — agent mentions false positive while ruling it OUT
+      addThought('think', d.text);
+    });
+
+    es.addEventListener('pre_action', e=>{
+      const d=JSON.parse(e.data);
+      setActionPending(d.pump_id, d.severity);
+    });
+
+    es.addEventListener('work_order', e=>{
+      lastWO=JSON.parse(e.data);
+      allWOs[lastWO.pump_id] = lastWO;
+      isFalse=false; // a work order was created — definitely not a false positive
+      setActionComplete(lastWO);
+    });
+
+    es.addEventListener('tool_result', e=>{
+      const d=JSON.parse(e.data);
+      if(d.tool==='get_fleet_status'){
+        const alerts=(d.result.alerts||[]).map(p=>`${p.pump_id} ${p.status}`).join(', ');
+        addThought('data', `Fleet scan: ${alerts||'no alerts'}`);
+      } else if(d.tool==='compare_pumps' && d.result.temp_difference_c!=null){
+        addThought('data', `Temp gap: ${d.result.temp_difference_c}°C · Vib gap: ${d.result.vibration_difference_mm_s} mm/s`);
+      }
+    });
+
+    es.addEventListener('report', e=>{
+      reportText=JSON.parse(e.data).text;
+      addThought('report', reportText);
+    });
+
+    es.addEventListener('done', e=>{
+      es.close(); running=false;
+      btn.disabled=false; btn.className='btn-run';
+      btn.innerHTML='▶ Run Again';
+      document.getElementById('agentStatus').className='badge badge-green';
+      document.getElementById('agentStatus').textContent='COMPLETE';
+
+      const scenarioPumpId = SCENARIOS[activeScenario].pump_id;
+      const scenarioWO = allWOs[scenarioPumpId] || null;
+      isFalse = !scenarioWO;
+
+      // If no DETECTION tag came, infer from whether a WO exists for this pump
+      const detLoad = document.getElementById('detectionLoading');
+      if(detLoad && detLoad.style.display!=='none'){
+        setDetection(
+          isFalse ? 'No fault detected — temperature spike explained by operating conditions.'
+                  : `Overheating confirmed on ${scenarioPumpId}.`,
+          isFalse
+        );
+      }
+
+      // If no diagnosis shown yet and we have a WO, fill it
+      const diagLoad = document.getElementById('diagnosisLoading');
+      if(diagLoad && diagLoad.style.display!=='none' && scenarioWO){
+        setDiagnosis(scenarioWO.root_cause, scenarioWO);
+      }
+
+      setSummary(reportText, scenarioWO, isFalse);
+      if(scenarioWO){
+        const er = document.getElementById('exportRow');
+        er.style.display='flex';
+      }
+    });
+
+    es.onerror=()=>{
+      es.close(); running=false;
+      btn.disabled=false; btn.className='btn-run';
+      btn.innerHTML='▶ Run Fleet Investigation';
+      document.getElementById('agentStatus').className='badge badge-red';
+      document.getElementById('agentStatus').textContent='ERROR';
+      document.getElementById('detectionBody').innerHTML='<div style="color:var(--red);font-size:13px;padding:4px 0;">Cannot connect to backend. Make sure <strong>pump_backend.py</strong> is running on port 8000.</div>';
+    };
+  }catch(err){
+    running=false; btn.disabled=false;
+    btn.innerHTML='▶ Run Fleet Investigation';
+  }
+}
+
+async function clearWorkOrders(){
+  await fetch(`${API}/work_orders`,{method:'DELETE'}).catch(()=>{});
+  workOrders=[]; resetAgent();
+}
+
+renderFleet(); renderPumpDetail(); renderChart();
+</script>
+</body>
+</html>
