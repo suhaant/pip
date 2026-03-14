@@ -137,9 +137,4 @@ python agent.py
 ```
 
 
-3. Watch the terminal as the agent queries the database, forms hypotheses, and outputs recommendations. Check `recommendations.txt` for the final alerts.
-
----
-```
-
-```
+3. Watch the terminal as the agent queries the database, forms hypotheses, and outputs recommendations. Check `recommendations.txt` for the final alerts!
