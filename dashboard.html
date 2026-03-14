@@ -298,6 +298,11 @@ svg.chart { width: 100%; height: 100%; overflow: visible; }
 .wo-list-pump { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
 .wo-list-cause { font-size: 14px; color: var(--text-mid); line-height: 1.5; margin-bottom: 12px; }
 .wo-list-action { font-size: 13px; color: var(--text-main); background: var(--surface-hover); padding: 12px; border-radius: 4px; border: 1px solid var(--border); }
+
+/* Export Buttons */
+.btn-export { flex: 1; padding: 14px; background: var(--surface); border: 1px solid var(--chv-blue); border-radius: 8px; font-family: var(--font-ui); font-size: 14px; font-weight: 600; color: var(--chv-blue); text-decoration: none; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.btn-export:hover { background: var(--chv-blue-lt); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0, 84, 164, 0.15); }
+
 </style>
 </head>
 <body>
@@ -449,11 +454,24 @@ svg.chart { width: 100%; height: 100%; overflow: visible; }
       </div>
     </div>
   </div>
+  
+  <div id="exportRowAnalytics" style="display:none; gap:24px; flex-shrink: 0; margin-top: auto;">
+    <a id="exportWO" href="http://localhost:8000/export/work_orders" download class="btn-export">⬇ Extract Work Orders CSV</a>
+    <a id="exportParts" href="http://localhost:8000/export/parts" download class="btn-export">⬇ Extract Parts List CSV</a>
+  </div>
 </div>
 
 <script>
 const API="http://localhost:8000";
-const FLEET={"PUMP-02":{platform:"Platform B",status:"NOMINAL",latestTemp:72,latestVib:2.0,latestFlow:314,latestLoad:63,latestPres:18.0},"PUMP-04":{platform:"Platform C",status:"NOMINAL",latestTemp:77,latestVib:2.2,latestFlow:309,latestLoad:70,latestPres:17.9},"PUMP-09":{platform:"Platform A",status:"NOMINAL",latestTemp:75,latestVib:2.1,latestFlow:320,latestLoad:66,latestPres:18.1},"PUMP-11":{platform:"Platform B",status:"OFFLINE",latestTemp:null}};
+// Added PUMP-03 and PUMP-12 as Platform C | 72°C | 2.0 mm/s | 63%
+const FLEET={
+  "PUMP-02":{platform:"Platform B",status:"NOMINAL",latestTemp:72,latestVib:2.0,latestFlow:314,latestLoad:63,latestPres:18.0},
+  "PUMP-03":{platform:"Platform C",status:"NOMINAL",latestTemp:72,latestVib:2.0,latestFlow:314,latestLoad:63,latestPres:18.0},
+  "PUMP-04":{platform:"Platform C",status:"NOMINAL",latestTemp:77,latestVib:2.2,latestFlow:309,latestLoad:70,latestPres:17.9},
+  "PUMP-09":{platform:"Platform A",status:"NOMINAL",latestTemp:75,latestVib:2.1,latestFlow:320,latestLoad:66,latestPres:18.1},
+  "PUMP-11":{platform:"Platform B",status:"OFFLINE",latestTemp:null},
+  "PUMP-12":{platform:"Platform A",status:"NOMINAL",latestTemp:72,latestVib:2.0,latestFlow:314,latestLoad:63,latestPres:18.0}
+};
 const SCENARIOS={bearing_failure:{pump_id:"PUMP-07",platform:"Platform B",status:"CRITICAL",location:"Platform B — Injection Line",desc:"Temp and vibration rising steadily for 4 hours despite constant load. Bearing degradation suspected.",readings:[{ts:"06:00",temp:72,pressure:18.2,flow:312,load:64,vib:2.1,delta:0},{ts:"06:30",temp:75,pressure:18.0,flow:310,load:65,vib:2.6,delta:3},{ts:"07:00",temp:79,pressure:17.9,flow:308,load:64,vib:3.4,delta:7},{ts:"07:30",temp:85,pressure:17.8,flow:305,load:65,vib:4.8,delta:13},{ts:"08:00",temp:91,pressure:17.6,flow:301,load:64,vib:6.7,delta:19},{ts:"08:30",temp:98,pressure:17.5,flow:297,load:65,vib:9.1,delta:26},{ts:"09:00",temp:107,pressure:17.3,flow:292,load:64,vib:12.4,delta:35},{ts:"09:30",temp:118,pressure:17.1,flow:285,load:65,vib:16.2,delta:46}],history:[{date:"2024-09-15",type:"Scheduled PM",note:"Bearing lubrication, normal wear"},{date:"2024-06-02",type:"Bearing Replacement",note:"Replaced rear bearing set — 14 months service"},{date:"2024-01-10",type:"Scheduled PM",note:"All readings nominal"}],baseline:"PUMP-02"},coolant_blockage:{pump_id:"PUMP-12",platform:"Platform A",status:"HIGH",location:"Platform A — Transfer Line",desc:"Pressure rising, flow dropping, temp climbing fast. Partial blockage in cooling circuit suspected.",readings:[{ts:"06:00",temp:73,pressure:18.1,flow:318,load:67,vib:1.9,delta:0},{ts:"06:20",temp:78,pressure:19.4,flow:298,load:68,vib:2.0,delta:5},{ts:"06:40",temp:86,pressure:21.2,flow:271,load:70,vib:2.2,delta:13},{ts:"07:00",temp:95,pressure:23.7,flow:238,load:73,vib:2.4,delta:22},{ts:"07:20",temp:104,pressure:26.1,flow:201,load:76,vib:2.5,delta:31},{ts:"07:40",temp:112,pressure:28.4,flow:167,load:79,vib:2.7,delta:39}],history:[{date:"2025-01-28",type:"Filter Inspection",note:"Coolant filter at 70% — flagged for next PM"},{date:"2024-11-05",type:"Scheduled PM",note:"Full coolant flush, new filter"},{date:"2024-07-19",type:"Unplanned — Overtemp",note:"Scale buildup in cooling line, cleaned"}],baseline:"PUMP-09"},false_positive:{pump_id:"PUMP-03",platform:"Platform C",status:"WARNING",location:"Platform C — Primary Injection",desc:"Temp briefly crossed warning threshold during a planned high-load surge. All other readings stayed normal.",readings:[{ts:"06:00",temp:74,pressure:17.9,flow:305,load:68,vib:1.8,delta:0},{ts:"06:15",temp:79,pressure:18.1,flow:341,load:82,vib:1.9,delta:5},{ts:"06:30",temp:87,pressure:18.4,flow:378,load:94,vib:2.0,delta:13},{ts:"06:45",temp:91,pressure:18.6,flow:392,load:98,vib:2.1,delta:17},{ts:"07:00",temp:88,pressure:18.3,flow:371,load:92,vib:2.0,delta:14},{ts:"07:15",temp:82,pressure:18.1,flow:340,load:83,vib:1.9,delta:8},{ts:"07:30",temp:76,pressure:17.9,flow:312,load:70,vib:1.8,delta:2}],history:[{date:"2025-02-20",type:"Scheduled PM",note:"Full inspection — all systems nominal, bearings excellent"},{date:"2024-10-11",type:"Scheduled PM",note:"Minor seal replacement, otherwise clean"}],baseline:"PUMP-04"}};
 
 let activeScenario='bearing_failure', running=false, workOrders=[];
@@ -551,10 +569,15 @@ function renderChart(){
 
 function renderWorkOrdersList() {
   const container = document.getElementById('woListContainer');
+  const exportRow = document.getElementById('exportRowAnalytics');
+  
   if (workOrders.length === 0) {
     container.innerHTML = '<div class="wo-empty-state">No work orders generated yet. Initialize the Agent on the System Overview tab.</div>';
+    if(exportRow) exportRow.style.display = 'none';
     return;
   }
+  
+  if(exportRow) exportRow.style.display = 'flex';
   container.innerHTML = workOrders.map(wo => `
     <div class="wo-list-card ${wo.severity}">
       <div class="wo-list-head">
@@ -687,6 +710,9 @@ function resetAgent(){
   document.getElementById('detectionLoading').style.display='flex';
   document.getElementById('diagnosisLoading').style.display='flex';
   document.getElementById('actionLoading').style.display='flex';
+  
+  const exportRow = document.getElementById('exportRowAnalytics');
+  if(exportRow) exportRow.style.display = 'none';
 }
 
 let activeAgentTab = 'results';
@@ -845,4 +871,4 @@ async function clearWorkOrders(){
 renderFleet(); renderPumpDetail(); renderChart(); renderWorkOrdersList();
 </script>
 </body>
-</html> 
+</html>
